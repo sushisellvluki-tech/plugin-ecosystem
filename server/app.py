@@ -63,7 +63,8 @@ class Host:
             code = result['error']['code'] if not result['ok'] else None
             status = {'FORBIDDEN': 403, 'UNAUTHENTICATED': 401, 'NOT_FOUND': 404,
                       'INVALID_ARGUMENT': 400, 'CONFLICT': 409, 'INTERNAL_ERROR': 500,
-                      'NOT_IMPLEMENTED': 501, 'TIMEOUT': 504}.get(code, 200)
+                      'NOT_IMPLEMENTED': 501, 'TIMEOUT': 504, 'DEPENDENCY_UNAVAILABLE': 503,
+                      'RATE_LIMITED': 429}.get(code, 200 if code is None else 500)
             return JSONResponse(result, status_code=status, headers={'Cache-Control': 'no-store'})
         self.routes.append(Route(path, endpoint, methods=['POST']))
 

@@ -41,3 +41,5 @@ jobs:
               c.execute("CREATE ROLE ecosystem_app LOGIN PASSWORD 'disposable-app-only' NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE")
           PY
       - run: python -m unittest discover -s tests -v
+      - name: Synthetic HTTP and MCP stress test
+        run: python -m scripts.stress_test --levels 1,8,32,64 --report stress-report.json

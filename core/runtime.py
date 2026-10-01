@@ -23,7 +23,7 @@ CODES = frozenset({'UNAUTHENTICATED', 'FORBIDDEN', 'INVALID_ARGUMENT', 'NOT_FOUN
 
 def failure(code, message):
     return {'ok': False, 'data': None,
-            'error': {'code': code, 'message': message, 'retryable': False}, 'warnings': []}
+            'error': {'code': code, 'message': message, 'retryable': code in {'DEPENDENCY_UNAVAILABLE', 'RATE_LIMITED'}}, 'warnings': []}
 
 
 def json_copy(value, limit):

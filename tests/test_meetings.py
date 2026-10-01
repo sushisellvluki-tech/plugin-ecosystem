@@ -189,6 +189,36 @@ class MeetingsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sum(r['ok'] for r in results),1)
         self.assertEqual(next(r for r in results if not r['ok'])['error']['code'],'CONFLICT')
 
+    async def test_http_timeout_503_rollback_and_same_key_retry(self):
+        import httpx2
+        from server.app import create_app
+        from server.auth import TokenVerifier
+        token = uuid4().hex
+        verifier = TokenVerifier([{'sha256':hashlib.sha256(token.encode()).hexdigest(), 'expires_at':time.time()+60,
+            'organization_id':self.org,'sub':'author','scope':'meetings:read meetings:write'}])
+        app = create_app(self.core,[plugin],verifier)
+        body = {'name':'meetings__import_batch','arguments':{'source_account_id':'timeout-fixture','sources':[
+            {'filename':'fixture.txt','format':'text/plain','text':TEXT,'external_id':'fixture'}]}}
+        async with httpx2.AsyncClient(transport=httpx2.ASGITransport(app=app),base_url='http://localhost',trust_env=False,
+                headers={'Authorization':'Bearer '+token,'Idempotency-Key':'retry-after-timeout'}) as http:
+            async with await psycopg.AsyncConnection.connect(ADMIN) as lock:
+                await lock.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,51477))',(self.org,))
+                self.core.timeout = .25
+                response = await http.post('/meetings/v1/tools/invoke',json=body)
+                self.assertEqual(response.status_code,503,response.text)
+                self.assertEqual(response.json()['error']['code'],'DEPENDENCY_UNAVAILABLE')
+                self.assertTrue(response.json()['error']['retryable'])
+                self.core.timeout = 10
+                with psycopg.connect(ADMIN) as conn:
+                    for table in ('items','idempotency','events','outbox'):
+                        self.assertEqual(conn.execute('SELECT count(*) FROM ecosystem.'+table+' WHERE organization_id=%s',(self.org,)).fetchone()[0],0)
+            first = await http.post('/meetings/v1/tools/invoke',json=body)
+            again = await http.post('/meetings/v1/tools/invoke',json=body)
+            self.assertEqual(first.status_code,200,first.text)
+            self.assertEqual(first.json(),again.json())
+            with psycopg.connect(ADMIN) as conn:
+                self.assertEqual(conn.execute('SELECT count(*) FROM meetings.batches WHERE organization_id=%s',(self.org,)).fetchone()[0],1)
+
     async def test_mcp_client_uses_real_domain_and_database(self):
         import httpx2
         import uvicorn
