@@ -167,6 +167,15 @@ class MeetingsTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(psycopg.errors.InsufficientPrivilege):
                 await conn.execute("UPDATE meetings.source_versions SET text_content='tampered'")
 
+    async def test_database_rejects_cross_domain_anchor(self):
+        item_id = str(uuid4())
+        with psycopg.connect(ADMIN) as conn:
+            conn.execute("INSERT INTO ecosystem.organization_domains VALUES (%s,'tasks',true)",(self.org,))
+            conn.execute("INSERT INTO ecosystem.items(organization_id,id,domain,kind,created_by) VALUES (%s,%s,'tasks','task','author')",(self.org,item_id))
+        async with self.store.session({'organization_id':self.org,'actor_id':'author'},'meetings',[]) as (conn,_,_):
+            with self.assertRaises(psycopg.errors.ForeignKeyViolation):
+                await conn.execute("INSERT INTO meetings.batches(organization_id,id,source_account_id,manifest_hash,status) VALUES (%s,%s,'manual','hash','ingested')",(self.org,item_id))
+
     async def test_concurrent_import_creates_one_source_version(self):
         first, second = await asyncio.gather(self.batch(),self.batch())
         self.assertEqual(first['entries'][0]['source_version_id'],second['entries'][0]['source_version_id'])
