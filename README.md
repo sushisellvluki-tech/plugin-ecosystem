@@ -77,7 +77,8 @@ python -m core
 chat_completions или mcp представлении. `Core.dispatch(plugin, name, args, context)`
 повторно проверяет доступ, валидирует вход и выход и ограничивает время выполнения.
 `core.ports.bind(host, core, plugin)` подключает оба интерфейса к этому каталогу и
-диспетчеру; настоящий HTTP/MCP host пока предстоит реализовать.
+диспетчеру. Реализация HTTP/MCP-хоста находится в `server/`; запуск описан в
+[docs/server.md](docs/server.md).
 
 Используйте `core.ports.bind` для нового ядра вместо отдельных template register:
 так каталоги тоже проходят проверку членства и включённых доменов ядра.

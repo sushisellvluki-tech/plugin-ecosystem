@@ -117,3 +117,7 @@ membership, Host/Origin checks and body limits. PostgreSQL tests require the
 separate environment described in `postgres.md`; GitHub Actions supplies it.
 
 SDK reference: https://py.sdk.modelcontextprotocol.io/run/asgi/
+
+Verified in [GitHub Actions run 36920680040](https://github.com/sushisellvluki-tech/plugin-ecosystem/actions/runs/36920680040):
+46 tests passed, none skipped, with PostgreSQL 16. This includes an authenticated
+HTTP database write, idempotent replay and rejection after membership revocation.
