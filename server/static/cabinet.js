@@ -7,6 +7,19 @@ const titles = {ingested:'Принят',blocked_ingestion:'Ошибка приё
   failed:'Есть замечания',ready:'Готов к публикации',published:'Опубликован',accepted:'Принят',
   duplicate:'Дубль',rejected:'Отклонён',pass:'Пройдено',fail:'Замечание'};
 const checkNames = ['Полнота пакета','Точность и полнота фактов','Согласованность с историей','Итоговое подтверждение'];
+const explanations = new Map([
+  ['Every declared text entry is stored and linked; this does not prove the export itself was complete','Все переданные записи сохранены и связаны с исходниками. Полноту самой выгрузки нужно сверить отдельно.'],
+  ['Exact quotations match; independent semantic and coverage review required','Цитаты совпадают с исходниками. Нужна независимая проверка смысла и полноты.'],
+  ['No exact-key conflicts detected; contextual and history review required','Явных противоречий не найдено. Нужно сверить контекст и историю.'],
+  ['Publication blocked pending checks 1-3 and coverage confirmation','Публикация закрыта до прохождения первых трёх проверок и подтверждения полноты.'],
+  ['All upstream checks and independent coverage attestation passed','Все предыдущие проверки пройдены, полнота подтверждена отдельным проверяющим.'],
+  ['Unresolved review findings','Есть замечания проверяющего. Публикация закрыта.'],
+  ['Unsupported format; only explicit text/plain is accepted','Формат не поддерживается. Нужна текстовая расшифровка.'],
+  ['Empty text or NUL characters','Пустой текст или недопустимые символы.'],
+  ['Repeated source identity in the same batch','Один ID записи повторяется внутри пакета.']
+]);
+function explain(text){return explanations.get(text)||text;}
+function recordsLabel(count){const n=count%100;return count+' '+(n>=11&&n<=14?'записей':count%10===1?'запись':count%10>=2&&count%10<=4?'записи':'записей');}
 function node(tag, text, cls) { const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(cls)el.className=cls;return el; }
 function show(id, yes=true) { $(id).hidden=!yes; }
 function notice(text, error=false) { $('notice').textContent=text;$('notice').className=error?'error':'';show('notice',Boolean(text)); }
@@ -14,7 +27,7 @@ function can(action) { return state.session?.tools.includes('meetings__'+action)
 function badge(status, stale=false) { return node('span',stale?'Устарело':(titles[status]||status),
   'badge '+(stale||['needs_review','ready'].includes(status)?'warn':['fail','failed','rejected','blocked_ingestion'].includes(status)?'bad':['pass','published'].includes(status)?'good':'')); }
 function setBusy(value) {
-  state.busy=value;
+  state.busy=value;document.body.setAttribute('aria-busy',String(value));
   if(value) {disabledBefore=new Map();document.querySelectorAll('button,input,textarea,select').forEach(el=>{if(el.id!=='logout'){disabledBefore.set(el,el.disabled);el.disabled=true;}});}
   else {for(const [el,disabled] of disabledBefore)if(el.isConnected)el.disabled=disabled;disabledBefore.clear();}
 }
@@ -75,7 +88,7 @@ async function loadList(append=false) {
   state.page=append?[...state.page,...data.records]:data.records;state.cursor=data.next_cursor;
   const list=$('batch-list');list.replaceChildren();
   state.page.forEach(row=>{const button=node('button',undefined,'batch-row'+(row.batch_id===state.batch?.batch_id?' active':''));
-    button.append(node('strong',row.source_account_id),node('small',new Date(row.created_at).toLocaleString('ru-RU')+' · '+row.files+' записей'),badge(row.run_status||row.ingestion_status,row.stale));
+    button.append(node('strong',row.source_account_id),node('small',new Date(row.created_at).toLocaleString('ru-RU')+' · '+recordsLabel(row.files)),badge(row.run_status||row.ingestion_status,row.stale));
     button.addEventListener('click',()=>perform(()=>openBatch(row)));list.append(button);});
   $('page-count').textContent='Показано пакетов: '+state.page.length;show('empty-list',state.page.length===0);show('more',Boolean(state.cursor));
 }
@@ -113,21 +126,22 @@ $('upload-form').addEventListener('submit',event=>{event.preventDefault();perfor
 function renderDetail() {
   const batch=state.batch,run=state.run;if(!batch)return;
   show('welcome',false);show('upload-panel',false);show('detail');
-  $('batch-title').textContent=batch.entries.length+' записей';$('batch-id').textContent=batch.batch_id;
+  $('batch-title').textContent=recordsLabel(batch.entries.length);$('batch-id').textContent=batch.batch_id;
   $('batch-status').replaceWith(Object.assign(badge(run?.status||batch.status,run?.stale),{id:'batch-status'}));show('stale-warning',Boolean(run?.stale));
   $('sources').replaceChildren();batch.entries.forEach(entry=>{const details=node('details');const summary=node('summary',entry.filename+' ');summary.append(badge(entry.status));details.append(summary);
-    if(entry.reason)details.append(node('p',entry.reason,'error-text'));details.append(node('pre',entry.text,'source-text'));$('sources').append(details);});
+    if(entry.reason)details.append(node('p',explain(entry.reason),'error-text'));details.append(node('pre',entry.text,'source-text'));$('sources').append(details);});
+  $('facts-hint').textContent=run?.stale?'Историческая версия: подтверждения больше не актуальны.':run?.status==='published'?'Опубликованная проверенная версия с подтверждающими цитатами.':run?.status==='ready'?'Проверки пройдены. Версия ожидает публикации.':'Предложенный факт ещё не считается проверенным.';
   $('saved-claims').replaceChildren();if(run)run.claims.forEach((c,i)=>$('saved-claims').append(renderClaim(c,i)));
   else $('saved-claims').append(node('p','Черновик пока не создан. Добавьте факты вручную, опираясь на цитаты.','muted'));
   show('edit-draft',can('submit_draft')&&batch.status==='ingested');show('draft-form',false);
   if(!run&&can('submit_draft')&&batch.status==='ingested')startDraft();
   $('checks').replaceChildren();
-  if(run)run.checks.forEach(c=>{const row=node('div',undefined,'check-row');const body=node('div');body.append(node('strong',checkNames[c.check_no-1]),node('p',c.reason));if(c.reviewer_id)body.append(node('p','Проверяющий: '+c.reviewer_id));row.append(node('span',c.check_no,'check-num'),body,badge(c.verdict));$('checks').append(row);});
+  if(run)run.checks.forEach(c=>{const row=node('div',undefined,'check-row');const body=node('div');body.append(node('strong',checkNames[c.check_no-1]),node('p',c.method==='human'?c.reason:explain(c.reason)));if(c.reviewer_id)body.append(node('p','Проверяющий: '+c.reviewer_id));row.append(node('span',c.check_no,'check-num'),body,badge(c.verdict));$('checks').append(row);});
   else $('checks').append(node('p','Проверки появятся после сохранения черновика.','muted'));
   $('run-status').replaceWith(Object.assign(badge(run?.status||'Нет черновика',run?.stale),{id:'run-status'}));
   const reviewable=run&&!run.stale&&run.status!=='published'&&run.created_by!==state.session.actor_id;
   show('review-form',Boolean(can('review_run')&&reviewable));$('review-form').reset();
-  $('review-message').textContent=run?.created_by===state.session.actor_id?'Черновик должен проверить другой участник.':run?'Сверьте исходники и историю публикаций перед подтверждением.':'';
+  $('review-message').textContent=run?.status==='published'?'Оценки сохранены в истории этой версии.':run?.created_by===state.session.actor_id?'Черновик должен проверить другой участник.':run?'Сверьте исходники и историю публикаций перед подтверждением.':'';
   show('publish-panel',Boolean(can('publish')&&run&&!run.stale&&run.status==='ready'&&run.checks.length===4&&run.checks.every(c=>c.verdict==='pass')));
 }
 function renderClaim(claim,index) {const card=node('article',undefined,'claim-card');card.append(node('h3',(index+1)+'. '+claim.text),node('p',claim.subject+' / '+claim.predicate+': '+claim.value),node('blockquote',claim.quote),node('p','Источник: '+(state.batch?.entries[claim.source_index]?.filename||('запись '+(claim.source_index+1))),'hint'));return card;}

@@ -64,9 +64,11 @@ try {
   await logout();await login('author');await page.locator('.batch-row').first().click();await page.locator('#publish-panel').waitFor({state:'visible'});await page.waitForFunction(()=>!document.querySelector('#publish').disabled);
   await page.locator('#publish').click();await page.locator('#confirm-publish').click();await notice('Результат опубликован');
   assert.equal(await page.locator('#run-status').textContent(),'Опубликован');
+  await page.evaluate(()=>window.scrollTo(0,0));
   await page.screenshot({path:'reports/browser/desktop.jpg',type:'jpeg',quality:55});
   await page.setViewportSize({width:390,height:844});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Mobile layout overflows');
+  await page.evaluate(()=>window.scrollTo(0,0));
   await page.screenshot({path:'reports/browser/mobile.jpg',type:'jpeg',quality:55});
   await logout();await login('outsider');await page.locator('#empty-list').waitFor({state:'visible'});assert.equal(await page.locator('.batch-row').count(),0);
   assert.ok(!(await page.locator('body').textContent()).includes(quote));
