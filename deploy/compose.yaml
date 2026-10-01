@@ -42,7 +42,7 @@ services:
     secrets: [database_url, server_config]
     ports:
       - '127.0.0.1:${PILOT_HTTP_PORT:-8000}:8000'
-    networks: [backend]
+    networks: [frontend, backend]
     restart: unless-stopped
     read_only: true
     tmpfs: [/tmp]
@@ -58,6 +58,7 @@ services:
 volumes:
   database:
 networks:
+  frontend:
   backend:
     internal: true
 secrets:
