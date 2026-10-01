@@ -72,3 +72,11 @@ Workflow `.github/workflows/pilot.yml` запускает настоящий Doc
 Основной PostgreSQL workflow дополнительно проверяет доменные тесты, стресс-прогон и полный сценарий кабинета в Chromium. Публичный CI не использует данные владельца фирмы.
 
 Справочные документы: [Compose startup order](https://docs.docker.com/compose/how-tos/startup-order/), [Compose secrets](https://docs.docker.com/compose/how-tos/use-secrets/), [PostgreSQL pg_dump](https://www.postgresql.org/docs/16/app-pgdump.html).
+
+## Подтверждённый результат, 2026-10-01 UTC
+
+Код стенда `6b43e0e84de180283a810d960e1aeb0b465dd7b0` прошёл [Compose CI](https://github.com/sushisellvluki-tech/plugin-ecosystem/actions/runs/36926615112): запуск, роли, UID 10001, отсутствие admin-секретов в приложении, сохранение загрузки и идемпотентного ответа после перезапуска приложения, восстановление копии (1 пакет, 1 версия источника, 1 запись идемпотентности, 8 политик RLS), отзыв и повторный bootstrap. В первой попытке обнаружили недоступность опубликованного порта при единственной internal-сети; добавление frontend-сети исправило её.
+
+Это проверка одноразового CI-стенда. Постоянный сервер, внешнее резервное хранилище и адрес для участников ещё не настроены.
+
+[Основной CI того же коммита](https://github.com/sushisellvluki-tech/plugin-ecosystem/actions/runs/36926615044) также завершился успешно: 64 теста без пропусков, 1008 синтетических HTTP/MCP-вызовов при параллельности 1/8/32/64 и полный сценарий кабинета в Chromium.
