@@ -18,8 +18,8 @@ def create(domain, destination):
     source = Path(__file__).resolve().parent.parent
     if destination.resolve() == source or source in destination.resolve().parents:
         raise ValueError('Destination must be outside the source repository')
-    directories = ('core', 'server', 'scripts', 'assets', 'references', 'tests', 'docs')
-    files = ('README.md', 'SKILL.md', 'requirements.txt', 'LICENSE', '.gitignore')
+    directories = ('core', 'server', 'scripts', 'assets', 'references', 'tests', 'docs', 'deploy')
+    files = ('README.md', 'SKILL.md', 'requirements.txt', 'LICENSE', '.gitignore', '.dockerignore')
     for name in (*directories, *files):
         if not (source / name).exists():
             raise ValueError(f'Incomplete source bundle: {name}')

@@ -82,6 +82,19 @@ class PostgresStore:
     def __init__(self, dsn):
         self._dsn = dsn
 
+    async def ready(self):
+        """Bounded role/schema probe; no tenant records or secrets in the response."""
+        async with await psycopg.AsyncConnection.connect(self._dsn,connect_timeout=2) as conn:
+            await conn.execute("SET statement_timeout='2000'")
+            role=await (await conn.execute('SELECT rolsuper,rolbypassrls,rolcreaterole,rolcreatedb FROM pg_roles WHERE rolname=current_user')).fetchone()
+            owner=await (await conn.execute("SELECT EXISTS(SELECT 1 FROM pg_tables WHERE schemaname IN ('ecosystem','meetings') AND tableowner=current_user)")).fetchone()
+            if any(role) or owner[0]:
+                raise ValueError('Unsafe application role')
+            await conn.execute('SELECT id FROM ecosystem.items LIMIT 0')
+            await conn.execute('SELECT id,domain FROM meetings.batches LIMIT 0')
+            await conn.execute('SELECT run_id FROM meetings.publications LIMIT 0')
+        return True
+
     @asynccontextmanager
     async def session(self, context, domain, scopes, *, read_only=False):
         if not isinstance(context,dict) or any(not isinstance(context.get(k),str) or not context[k] for k in ('organization_id','actor_id')):

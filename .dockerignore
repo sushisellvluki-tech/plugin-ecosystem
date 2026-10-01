@@ -1,0 +1,9 @@
+.git
+**/__pycache__
+**/*.pyc
+**/.env*
+**/*.key
+**/*private*
+reports
+node_modules
+.venv

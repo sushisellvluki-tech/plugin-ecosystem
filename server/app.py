@@ -1,4 +1,5 @@
 """ASGI adapter over core.ports; the registry remains the sole tool catalog."""
+import asyncio
 from urllib.parse import urlsplit
 from contextlib import AsyncExitStack, asynccontextmanager
 from mcp.server.lowlevel import Server
@@ -122,7 +123,16 @@ def create_app(core, plugins, verifier, *, allowed_hosts=('127.0.0.1', 'localhos
     async def health(request):
         return JSONResponse({'status': 'up'})
 
-    public_routes = [Route('/healthz', health), *cabinet_routes()]
+    async def ready(request):
+        if core.persistence is None:
+            return JSONResponse({'status':'demo'},status_code=503,headers={'Cache-Control':'no-store'})
+        try:
+            await asyncio.wait_for(core.persistence.ready(),5)
+            return JSONResponse({'status':'ready'},headers={'Cache-Control':'no-store'})
+        except Exception:
+            return JSONResponse({'status':'unavailable'},status_code=503,headers={'Cache-Control':'no-store'})
+
+    public_routes = [Route('/healthz', health), Route('/readyz', ready), *cabinet_routes()]
     metadata_url = None
     if oauth_resource:
         parsed = urlsplit(oauth_resource)
