@@ -23,7 +23,11 @@ BATCH = obj(batch_id=S, status=S, entries=array(ENTRY))
 RUN = obj(run_id=S, batch_id=S, status=S, artifact_hash=S, source_hash=S, rule_version=S,
           claims=array(CLAIM), checks=array(CHECK), stale=B, created_by=S, model_version=N, prompt_version=N)
 HISTORY = obj(records=array(obj(run_id=S, artifact_hash=S, claims=array(CLAIM), stale=B)), truncated=B)
+PAGE = obj(records=array(obj(batch_id=S,created_at=S,source_account_id=S,ingestion_status=S,
+                              run_id=N,run_status=N,stale=B,files=I)),next_cursor=N)
 SPECS = [
+    ('list_batches', 'List this organization batches with stable cursor pagination; no raw transcripts in the projection.',
+     obj(cursor=N,limit=I), PAGE, 'read', True),
     ('import_batch', 'Import a bounded batch of explicit text/plain transcripts; preserve rejected entries. No binary Plaud parser.',
      obj(source_account_id=S, sources=array(SOURCE)), BATCH, 'write', False),
     ('get_batch', 'Read original texts and per-entry ingestion outcomes in this organization.', obj(batch_id=S), BATCH, 'read', True),

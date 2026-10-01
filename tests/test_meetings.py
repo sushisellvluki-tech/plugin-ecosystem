@@ -40,8 +40,8 @@ class CheckTests(unittest.TestCase):
 
     def test_registered_exports_use_one_contract(self):
         registry = Registry(); registry.register(plugin)
-        self.assertEqual(len(registry._entries),8)
-        self.assertEqual(len(Core.export_specs(plugin.tools(),'mcp')),8)
+        self.assertEqual(len(registry._entries),9)
+        self.assertEqual(len(Core.export_specs(plugin.tools(),'mcp')),9)
 
 
 @unittest.skipUnless(ADMIN and APP, 'Requires disposable PostgreSQL')
@@ -188,6 +188,21 @@ class MeetingsTests(unittest.IsolatedAsyncioTestCase):
         results = await asyncio.gather(self.publish(first),self.publish(second))
         self.assertEqual(sum(r['ok'] for r in results),1)
         self.assertEqual(next(r for r in results if not r['ok'])['error']['code'],'CONFLICT')
+
+    async def test_cabinet_page_cursor_and_tenant_projection(self):
+        batches=[await self.batch(external_id=str(i)) for i in range(3)]
+        first=self.data(await self.call('list_batches',{'cursor':None,'limit':2}))
+        second=self.data(await self.call('list_batches',{'cursor':first['next_cursor'],'limit':2}))
+        self.assertEqual(len(first['records']),2)
+        self.assertEqual(len(second['records']),1)
+        self.assertIsNone(second['next_cursor'])
+        self.assertEqual({r['batch_id'] for r in first['records']+second['records']},{b['batch_id'] for b in batches})
+        self.assertNotIn('text',first['records'][0])
+        self.assertEqual(self.data(await self.call('list_batches',{'cursor':None,'limit':20},org=self.other))['records'],[])
+        bad=await self.call('list_batches',{'cursor':'malformed','limit':20})
+        self.assertEqual(bad['error']['code'],'INVALID_ARGUMENT')
+        bad=await self.call('list_batches',{'cursor':None,'limit':1000})
+        self.assertEqual(bad['error']['code'],'INVALID_ARGUMENT')
 
     async def test_http_timeout_503_rollback_and_same_key_retry(self):
         import httpx2

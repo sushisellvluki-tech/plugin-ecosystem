@@ -162,6 +162,21 @@ class LiveServerTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual((await client.list_tools()).tools, [])
                     self.assertTrue((await client.call_tool('meetings__describe', {})).is_error)
 
+    async def test_cabinet_shell_and_authenticated_session(self):
+        async with self.client('') as client:
+            shell=await client.get('/cabinet')
+            self.assertEqual(shell.status_code,200)
+            self.assertIn("frame-ancestors 'none'",shell.headers['content-security-policy'])
+            self.assertEqual(shell.headers['cache-control'],'no-store')
+            self.assertEqual((await client.get('/cabinet/cabinet.js')).status_code,200)
+            self.assertEqual((await client.get('/meetings/v1/session')).status_code,401)
+        async with self.client() as client:
+            session=await client.get('/meetings/v1/session')
+            self.assertEqual(session.json()['organization_id'],'org')
+            self.assertEqual(session.json()['actor_id'],'actor')
+            response=await client.post('/meetings/v1/tools/invoke',headers={'Origin':self.url},json={'name':'meetings__describe','arguments':{}})
+            self.assertEqual(response.status_code,200,response.text)
+
     async def test_modern_client_and_credential_rechecked(self):
         async with self.client() as http:
             transport = streamable_http_client(self.url+'/meetings/mcp', http_client=http)

@@ -43,3 +43,9 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - name: Synthetic HTTP and MCP stress test
         run: python -m scripts.stress_test --levels 1,8,32,64 --report stress-report.json
+      - name: Install browser test dependencies
+        run: |
+          npm install --no-save playwright@1.62.1
+          npx playwright install --with-deps chromium --only-shell
+      - name: Real browser cabinet acceptance
+        run: node scripts/cabinet_browser_test.mjs

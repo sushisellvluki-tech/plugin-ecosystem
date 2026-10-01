@@ -11,6 +11,7 @@ from starlette.routing import Mount, Route
 from core.ports import bind
 from core.runtime import Core, failure
 from .security import Security
+from .cabinet import routes as cabinet_routes
 
 
 class ScopedCore:
@@ -104,6 +105,11 @@ def create_app(core, plugins, verifier, *, allowed_hosts=('127.0.0.1', 'localhos
     host = Host(verifier, allowed_hosts, allowed_origins)
     scoped = ScopedCore(core)
     for plugin in plugins:
+        async def session(context, domain=plugin.DOMAIN):
+            specs = await scoped.catalog_async(context)
+            return {'organization_id': context['organization_id'], 'actor_id': context['actor_id'],
+                    'tools': [s['name'] for s in specs if core.registry._entries[s['name']].domain == domain]}
+        host.add_json_get(f'/{plugin.DOMAIN}/v1/session', session)
         bind(host, scoped, plugin)
 
     @asynccontextmanager
@@ -116,7 +122,7 @@ def create_app(core, plugins, verifier, *, allowed_hosts=('127.0.0.1', 'localhos
     async def health(request):
         return JSONResponse({'status': 'up'})
 
-    public_routes = [Route('/healthz', health)]
+    public_routes = [Route('/healthz', health), *cabinet_routes()]
     metadata_url = None
     if oauth_resource:
         parsed = urlsplit(oauth_resource)
@@ -131,6 +137,6 @@ def create_app(core, plugins, verifier, *, allowed_hosts=('127.0.0.1', 'localhos
                 'scopes_supported': sorted({s for e in core.registry._entries.values() for s in e.spec['required_scopes']})})
         public_routes.append(Route('/.well-known/oauth-protected-resource', metadata))
     protected = Security(Starlette(routes=host.routes), verifier, allowed_origins=allowed_origins,
-                         resource_metadata=metadata_url)
+                         resource_metadata=metadata_url, allow_same_origin=True)
     app = Starlette(routes=[*public_routes, Mount('/', app=protected)], lifespan=lifespan)
     return TrustedHostMiddleware(app, allowed_hosts=list(allowed_hosts), www_redirect=False)

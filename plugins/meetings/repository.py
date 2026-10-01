@@ -1,4 +1,7 @@
 """Meetings-owned SQL using the core transaction, identity, RLS and outbox."""
+import base64
+import json
+from datetime import datetime
 from uuid import UUID, uuid4
 from psycopg.types.json import Jsonb
 from core.db.store import Rejected
@@ -37,6 +40,34 @@ class Meetings:
             await self.conn.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s, 51477))', (self.org,))
             await self.conn.execute('INSERT INTO meetings.tenant_state(organization_id) VALUES (%s) ON CONFLICT DO NOTHING', (self.org,))
         return await getattr(self, action)(**args)
+
+    async def list_batches(self, cursor, limit):
+        if type(limit) is not int or not 1 <= limit <= 50:
+            raise ValueError('Page size must be 1 to 50')
+        params = [self.org]
+        after = ''
+        if cursor is not None:
+            try:
+                if not isinstance(cursor,str) or len(cursor)>256:
+                    raise ValueError()
+                stamp, item_id = json.loads(base64.b64decode(cursor,altchars=b'-_',validate=True))
+                parsed = datetime.fromisoformat(stamp)
+                if parsed.tzinfo is None:
+                    raise ValueError()
+                item_id = uuid(item_id)
+            except (ValueError,TypeError,UnicodeError):
+                raise ValueError('Invalid page cursor') from None
+            after = ' AND (b.created_at,b.id)<(%s,%s::uuid)'
+            params.extend([parsed,item_id])
+        params.append(limit+1)
+        rows = await self.rows('SELECT b.id::text AS batch_id,b.created_at,b.source_account_id,b.status AS ingestion_status,b.current_run_id::text AS run_id,r.status AS run_status,(SELECT count(*) FROM meetings.batch_entries e WHERE e.organization_id=b.organization_id AND e.batch_id=b.id) AS files FROM meetings.batches b LEFT JOIN meetings.runs r ON r.organization_id=b.organization_id AND r.id=b.current_run_id WHERE b.organization_id=%s'+after+' ORDER BY b.created_at DESC,b.id DESC LIMIT %s',params)
+        more = len(rows)>limit
+        rows = rows[:limit]
+        for row in rows:
+            row['created_at'] = row['created_at'].isoformat()
+            row['stale'] = await self.stale(await self.run(row['run_id'])) if row['run_id'] else False
+        next_cursor = base64.urlsafe_b64encode(json.dumps([rows[-1]['created_at'],rows[-1]['batch_id']]).encode()).decode() if more else None
+        return {'records':rows,'next_cursor':next_cursor}
 
     async def import_batch(self, source_account_id, sources):
         if not source_account_id.strip() or len(source_account_id) > 128:

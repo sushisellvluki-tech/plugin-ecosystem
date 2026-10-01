@@ -5,11 +5,12 @@ from starlette.responses import JSONResponse
 
 
 class Security:
-    def __init__(self, app, verifier, *, resource_metadata=None, allowed_origins=(), max_body=131072):
+    def __init__(self, app, verifier, *, resource_metadata=None, allowed_origins=(), max_body=131072, allow_same_origin=False):
         self.app,self.verifier=app,verifier
         self.metadata=resource_metadata
         self.origins=frozenset(allowed_origins)
         self.max_body=max_body
+        self.allow_same_origin=allow_same_origin
 
     async def __call__(self,scope,receive,send):
         if scope['type']!='http':
@@ -26,7 +27,8 @@ class Security:
                 return await reject(400,'duplicate_security_header')
             headers[key]=v.decode('latin-1')
         origin=headers.get('origin')
-        if origin is not None and origin not in self.origins:
+        same_origin = self.allow_same_origin and origin == scope.get('scheme','http')+'://'+headers.get('host','')
+        if origin is not None and origin not in self.origins and not same_origin:
             return await reject(403,'origin_denied')
         if any(k in parse_qs(scope.get('query_string',b'').decode('latin-1'), keep_blank_values=True) for k in ('access_token','token','api_key')):
             return await reject(400,'token_in_url_forbidden')
