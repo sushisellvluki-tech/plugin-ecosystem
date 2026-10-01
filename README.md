@@ -2,7 +2,7 @@
 
 Plugin ecosystem core with reusable plugin architecture.
 
-## Текущее состояние: Заход 4 — HTTP, авторизация и MCP
+## Текущее состояние: Заход 5 — meetings: тексты, версии и независимая проверка
 
 Репозиторий содержит готовый навык проектирования экосистемы, контракт плагина,
 архитектуру, генератор домена и адаптеры регистрации OpenAI function calling / MCP.
@@ -10,6 +10,11 @@ Plugin ecosystem core with reusable plugin architecture.
 Добавлен опциональный PostgreSQL-слой: миграции, tenant-хранилище и транзакционные записи.
 Добавлен запускаемый HTTP/MCP-хост с Bearer-ключами и проверкой JWT.
 Внешнее развёртывание пока не выполнено. Инструкция: [docs/server.md](docs/server.md).
+
+Добавлен домен `meetings`: текстовые пакеты, версии исходников, цитируемые черновики,
+четыре проверки и транзакционный барьер публикации. Смысл проверяет независимый
+проверяющий; автоматический ИИ и нативный парсер Plaud ещё не подключены.
+Порядок работы: [docs/meetings.md](docs/meetings.md).
 
 ## Состав
 
@@ -22,7 +27,7 @@ Plugin ecosystem core with reusable plugin architecture.
 - `assets/plugin-template/` — шаблоны плагина и адаптеров.
 - `server/` — ASGI-хост, официальный MCP SDK, проверка токенов и scopes.
 - `core/` — реестр, диспетчер, политика доступа и адаптеры портов.
-- `plugins/` — место для генерируемых доменов; бизнес-домены пока не реализованы.
+- `plugins/meetings/` — приём текста и независимая проверка; остальные домены генерируются отдельно.
 - `tests/` — проверки ядра и интеграции с генератором.
 
 После объединения с загруженным комплектом references содержит девять документов:
@@ -37,8 +42,8 @@ Plugin ecosystem core with reusable plugin architecture.
 Из корня репозитория:
 
 ```bash
-bash scripts/new-plugin.sh meetings "$PWD"
-bash scripts/check-tools.sh "$PWD/plugins/meetings"
+bash scripts/new-plugin.sh tasks "$PWD"
+bash scripts/check-tools.sh "$PWD/plugins/tasks"
 ```
 
 Генератор создаёт диагностический инструмент, manifest, план адресов и адаптеры.
@@ -49,7 +54,7 @@ bash scripts/check-tools.sh "$PWD/plugins/meetings"
 
 Ядро работает локально в одном процессе; PostgreSQL подключается отдельно.
 Подключение OAuth-провайдера, внешнее развёртывание, четыре ИИ-проверки, кабинет
-и бизнес-логика доменов остаются дальнейшими этапами. Генератор не запускает эти компоненты.
+и остальные бизнес-домены остаются дальнейшими этапами. Генератор не запускает эти компоненты.
 
 Основной MCP-адрес — `/{domain}/mcp`; `/{domain}/mcp/sse` — отдельный
 планируемый режим совместимости, пока не включённый в хост. Проверка `scripts/mcp-check.sh` требует уже работающего
@@ -114,7 +119,7 @@ cd /absolute/new-project
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
-bash scripts/check-tools.sh "$PWD/plugins/meetings"
+bash scripts/check-tools.sh "$PWD/plugins/tasks"
 python -m unittest discover -s tests -v
 python -m core
 ```

@@ -1,0 +1,17 @@
+{
+  "status": "implemented_in_server_package_not_deployed",
+  "runtime_required": true,
+  "function_catalog": "/meetings/v1/tools",
+  "function_invoke": "/meetings/v1/tools/invoke",
+  "mcp": {
+    "path": "/meetings/mcp",
+    "transport": "streamable_http",
+    "implemented_protocol_versions": []
+  },
+  "legacy_sse": {
+    "path": "/meetings/mcp/sse",
+    "enabled": false,
+    "requires_sdk_post_backchannel": true
+  },
+  "authentication": "server.auth_and_core_memberships"
+}

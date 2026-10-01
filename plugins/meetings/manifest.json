@@ -1,0 +1,18 @@
+{
+  "domain": "meetings",
+  "version": "0.1.0",
+  "contract_version": "0.1",
+  "status": "manual_review",
+  "business_ready": false,
+  "runtime_included": true,
+  "entrypoint": "plugins.meetings.plugin",
+  "adapters": {
+    "openai": "plugins.meetings.expose.openai:register",
+    "mcp": "plugins.meetings.expose.mcp:register"
+  },
+  "database": {
+    "planned_engine": "postgresql",
+    "planned_schema": "meetings",
+    "migrations_implemented": false
+  }
+}

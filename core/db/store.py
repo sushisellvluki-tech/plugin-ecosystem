@@ -27,6 +27,19 @@ class UnitOfWork:
         if not self._active:
             raise RuntimeError('Unit of work already closed')
 
+    def connection_for(self, domain):
+        """Trusted domain repositories share this transaction and its RLS context."""
+        self.check()
+        if domain != self.domain:
+            raise ValueError('Repository domain mismatch')
+        return self._conn
+
+    async def record_event(self, item_id, revision, kind):
+        self.check()
+        if not isinstance(kind, str) or not re.fullmatch(r'[a-z][a-z0-9_.]{0,99}', kind):
+            raise ValueError('Invalid event kind')
+        await self._event(item_id, revision, kind)
+
     async def get_item(self, item_id):
         self.check()
         row = await (await self._conn.execute('SELECT id::text,kind,status,revision,meta FROM ecosystem.items WHERE organization_id=%s AND domain=%s AND id=%s',
@@ -78,7 +91,7 @@ class PostgresStore:
                 if read_only:
                     await conn.execute('SET TRANSACTION READ ONLY')
                 role = await (await conn.execute("SELECT rolsuper,rolbypassrls,rolcreaterole,rolcreatedb FROM pg_roles WHERE rolname=current_user")).fetchone()
-                owner = await (await conn.execute("SELECT EXISTS(SELECT 1 FROM pg_tables WHERE schemaname='ecosystem' AND tableowner=current_user) AS owns")).fetchone()
+                owner = await (await conn.execute("SELECT EXISTS(SELECT 1 FROM pg_tables WHERE schemaname IN ('ecosystem','meetings') AND tableowner=current_user) AS owns")).fetchone()
                 if any(role.values()) or owner['owns']:
                     raise Rejected(failure('INTERNAL_ERROR','Unsafe database application role'))
                 await conn.execute("SELECT set_config('app.organization_id',%s,true),set_config('app.actor_id',%s,true),set_config('app.domain',%s,true),set_config('statement_timeout','10000',true),set_config('lock_timeout','5000',true)",

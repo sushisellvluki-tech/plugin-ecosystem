@@ -7,10 +7,9 @@ not enabled. HTTP function exports are not a `/chat/completions` model endpoint.
 
 ## Local diagnostic run
 
-From the repository root, create the diagnostic domain once:
+The repository now includes the meetings domain. From the repository root:
 
 ```bash
-bash scripts/new-plugin.sh meetings "$PWD"
 python -m pip install -r requirements.txt
 ```
 

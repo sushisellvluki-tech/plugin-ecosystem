@@ -33,6 +33,13 @@ def migrate(dsn, app_role):
             conn.execute(sql.SQL('GRANT SELECT, INSERT ON ecosystem.{} TO {}').format(sql.Identifier(table),sql.Identifier(app_role)))
 
 
+        conn.execute(sql.SQL('GRANT USAGE ON SCHEMA meetings TO {}').format(sql.Identifier(app_role)))
+        for table in ('sources','source_versions','batch_entries','check_results','publications'):
+            conn.execute(sql.SQL('GRANT SELECT, INSERT ON meetings.{} TO {}').format(sql.Identifier(table),sql.Identifier(app_role)))
+        for table in ('tenant_state','batches','runs'):
+            conn.execute(sql.SQL('GRANT SELECT, INSERT, UPDATE ON meetings.{} TO {}').format(sql.Identifier(table),sql.Identifier(app_role)))
+
+
 if __name__ == '__main__':
     migrate(os.environ['DATABASE_ADMIN_URL'], os.environ['DATABASE_APP_ROLE'])
     print('Migrations applied and checksums verified.')

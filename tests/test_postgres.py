@@ -205,9 +205,10 @@ class PostgresTests(unittest.IsolatedAsyncioTestCase):
         finally:
             import hashlib
             from pathlib import Path
-            digest=hashlib.sha256((Path(__file__).parents[1]/'core/db/migrations/001_initial.sql').read_bytes()).hexdigest()
             with psycopg.connect(ADMIN) as c:
-                c.execute('UPDATE public.ecosystem_migrations SET sha256=%s',(digest,))
+                for path in (Path(__file__).parents[1]/'core/db/migrations').glob('*.sql'):
+                    digest=hashlib.sha256(path.read_bytes()).hexdigest()
+                    c.execute('UPDATE public.ecosystem_migrations SET sha256=%s WHERE name=%s',(digest,path.name))
 
     async def test_http_authenticated_write_and_replay(self):
         import hashlib

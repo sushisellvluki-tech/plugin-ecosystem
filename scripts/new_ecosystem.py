@@ -34,7 +34,14 @@ def create(domain, destination):
         for name in ('cabinet', 'bridges'):
             (destination / name).mkdir()
             (destination / name / '.gitkeep').touch()
-        generate(domain, destination)
+        bundled = source / 'plugins' / 'meetings'
+        if (bundled / 'repository.py').is_file():
+            (destination / 'plugins').mkdir()
+            (destination / 'plugins' / '__init__.py').write_text('"""Application plugins."""\n')
+            shutil.copytree(bundled, destination / 'plugins' / 'meetings',
+                            ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+        if domain != 'meetings' or not (destination / 'plugins' / 'meetings').exists():
+            generate(domain, destination)
         for script in (destination / 'scripts').glob('*.sh'):
             script.chmod(0o755)
     except BaseException:
