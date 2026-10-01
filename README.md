@@ -22,8 +22,11 @@ Plugin ecosystem core with reusable plugin architecture.
 - `plugins/` — место для генерируемых доменов; бизнес-домены пока не реализованы.
 - `tests/` — проверки ядра и интеграции с генератором.
 
-В исходном готовом навыке четыре файла references. Упомянутый пятый файл
-в доступном комплекте отсутствует; новый документ вместо него не создавался.
+После объединения с загруженным комплектом references содержит девять документов:
+четыре исходных (включая MCP) и пять адаптированных проектных материалов:
+[БД](references/db-pattern.md), [проверки](references/checks-pipeline.md),
+[кабинет](references/cabinet-pattern.md), [Plaud](references/plaud-integration.md),
+[домены](references/domain-recipes.md).
 
 ## Создание домена
 
@@ -96,3 +99,27 @@ chat_completions или mcp представлении. `Core.dispatch(plugin, n
 
 Валидация схем использует [jsonschema Draft202012Validator](https://python-jsonschema.readthedocs.io/en/latest/validate/)
 и ограниченное подмножество контракта; внешние `$ref` не допускаются.
+
+## Создать отдельную экосистему
+
+Из любой директории, используя абсолютный путь к этому репозиторию:
+
+```bash
+bash /absolute/plugin-ecosystem/scripts/new-ecosystem.sh meetings /absolute/new-project
+cd /absolute/new-project
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+bash scripts/check-tools.sh "$PWD/plugins/meetings"
+python -m unittest discover -s tests -v
+python -m core
+```
+
+Без пути назначения используется `./ecosystem`. Каталог назначения должен отсутствовать,
+а его родитель — существовать. Генератор отказывается от перезаписи и от создания
+внутри собственного исходного репозитория. Копируются ядро, скрипты, шаблоны, тесты,
+reference и лицензия; первый домен создаётся по текущему контракту.
+`cabinet/` и `bridges/` остаются пустыми местами для будущей реализации.
+Скрипт не устанавливает зависимости, не соединяется с Plaud и не запускает сервер.
+
+Сведения об объединении: [docs/import-review.md](docs/import-review.md).

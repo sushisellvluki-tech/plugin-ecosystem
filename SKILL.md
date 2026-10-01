@@ -45,3 +45,23 @@ description: "Проектировать и расширять прикладн�
 - `scripts/new-plugin.sh` и `new_plugin.py`: создание заготовки.
 - `scripts/check-tools.sh` и `check_tools.py`: проверка контракта и экспортов.
 - `scripts/mcp-check.sh` и `mcp_check.py`: ограниченная проверка реального сервера.
+
+## Создать новый проект
+
+Запустить `bash <repo>/scripts/new-ecosystem.sh <domain> /absolute/new-project`.
+Без второго аргумента создаётся `./ecosystem`. Родитель должен существовать;
+существующий каталог назначения, включая пустой, не перезаписывается.
+Генератор переносит текущее локальное ядро, контракт и зависимости и создаёт первый
+диагностический домен. БД/HTTP/OAuth/кабинет не запускаются. Для уже существующего
+проекта использовать new-plugin.sh, не new-ecosystem.sh.
+
+## Дополнительные проектные материалы
+
+- [db-pattern.md](references/db-pattern.md): Item/Event, версии, ограничения и outbox.
+- [checks-pipeline.md](references/checks-pipeline.md): проверки и публикационный барьер.
+- [cabinet-pattern.md](references/cabinet-pattern.md): представления и границы API кабинета.
+- [plaud-integration.md](references/plaud-integration.md): пакетный экспорт раз в 3–5 дней.
+- [domain-recipes.md](references/domain-recipes.md): планы доменов по единому контракту.
+
+Материалы описывают будущую реализацию; не объявлять эти компоненты работающими
+на основании наличия reference. Состояние локального ядра и команды тестов — в README.
