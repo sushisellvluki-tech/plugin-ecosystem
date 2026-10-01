@@ -209,6 +209,30 @@ class PostgresTests(unittest.IsolatedAsyncioTestCase):
             with psycopg.connect(ADMIN) as c:
                 c.execute('UPDATE public.ecosystem_migrations SET sha256=%s',(digest,))
 
+    async def test_http_authenticated_write_and_replay(self):
+        import hashlib
+        import time
+        import httpx2
+        from server.app import create_app
+        from server.auth import TokenVerifier
+        key = {'sha256': hashlib.sha256(b'ephemeral-test-token').hexdigest(),
+               'expires_at': time.time()+60, 'organization_id': self.org,
+               'sub': 'alice', 'scope': 'demo:write'}
+        app = create_app(self.core, [self.plugin], TokenVerifier([key]))
+        async with httpx2.AsyncClient(transport=httpx2.ASGITransport(app=app),
+                base_url='http://localhost', trust_env=False,
+                headers={'Authorization': 'Bearer ephemeral-test-token', 'Idempotency-Key': 'http-write'}) as http:
+            body = {'name': 'demo__create', 'arguments': {'value': 'through-http'}}
+            first = await http.post('/demo/v1/tools/invoke', json=body)
+            replay = await http.post('/demo/v1/tools/invoke', json=body)
+            self.assertEqual(first.status_code, 200, first.text)
+            self.assertTrue(first.json()['ok'])
+            self.assertEqual(first.json(), replay.json())
+            self.assertEqual(self.counts()['items'], 1)
+            with psycopg.connect(ADMIN) as c:
+                c.execute('UPDATE ecosystem.memberships SET active=false WHERE organization_id=%s AND actor_id=%s', (self.org, 'alice'))
+            self.assertEqual((await http.post('/demo/v1/tools/invoke', json=body)).status_code, 403)
+
 
 if __name__=='__main__':
     unittest.main()

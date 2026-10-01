@@ -18,7 +18,7 @@ def create(domain, destination):
     source = Path(__file__).resolve().parent.parent
     if destination.resolve() == source or source in destination.resolve().parents:
         raise ValueError('Destination must be outside the source repository')
-    directories = ('core', 'scripts', 'assets', 'references', 'tests', 'docs')
+    directories = ('core', 'server', 'scripts', 'assets', 'references', 'tests', 'docs')
     files = ('README.md', 'SKILL.md', 'requirements.txt', 'LICENSE', '.gitignore')
     for name in (*directories, *files):
         if not (source / name).exists():
