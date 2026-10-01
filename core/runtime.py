@@ -145,17 +145,29 @@ class AccessPolicy:
 
 
 class Core:
-    def __init__(self, registry, policy, *, timeout=10, input_limit=65536, output_limit=1048576):
+    def __init__(self, registry, policy, *, timeout=10, input_limit=65536, output_limit=1048576, persistence=None):
         if timeout <= 0 or input_limit <= 0 or output_limit <= 0:
             raise ValueError('Positive limits required')
         self.registry, self.policy = registry, policy
+        self.persistence = persistence
         self.timeout, self.input_limit, self.output_limit = timeout, input_limit, output_limit
 
+    async def catalog_async(self, context, style='native'):
+        if self.persistence is not None:
+            return await self.persistence.catalog(self, context, style)
+        return self.catalog(context, style)
+
     def catalog(self, context, style='native'):
+        if self.persistence is not None:
+            raise RuntimeError('Use await catalog_async() with database persistence')
         trusted, error = self.policy.resolve(context)
         if error:
             raise PermissionError(error)
         specs = [deepcopy(e.spec) for e in self.registry._entries.values() if self.policy.permits(e.spec, trusted, e.domain)]
+        return self.export_specs(specs, style)
+
+    @staticmethod
+    def export_specs(specs, style):
         if style == 'native':
             return specs
         if style in ('responses', 'chat_completions'):
@@ -173,6 +185,8 @@ class Core:
 
     async def dispatch(self, plugin, name, arguments, context):
         """Compatible with generated adapter dispatch(plugin, name, args, context)."""
+        if self.persistence is not None:
+            return await self.persistence.dispatch(self, plugin, name, arguments, context)
         trusted, error = self.policy.resolve(context)
         if error:
             return failure(error, 'Authenticated membership required')
@@ -182,9 +196,7 @@ class Core:
         if not self.policy.permits(entry.spec, trusted, entry.domain):
             return failure('FORBIDDEN', 'Tool access denied')
         try:
-            args = json_copy(arguments, self.input_limit)
-            if not entry.input_validator.is_valid(args):
-                raise ValueError('Invalid arguments')
+            args = self.validate_arguments(entry, arguments, self.input_limit)
         except (ValueError, TypeError, RecursionError, OverflowError):
             return failure('INVALID_ARGUMENT', 'Arguments do not match the tool schema or limits')
         # No write handler can run without the future transactional persistence layer.
@@ -204,6 +216,13 @@ class Core:
             LOG.warning('tool_failure request_id=%s tool=%s', trusted['request_id'], name)
         LOG.info('tool_completed request_id=%s tool=%s ok=%s', trusted['request_id'], name, result['ok'])
         return result
+
+    @staticmethod
+    def validate_arguments(entry, arguments, limit):
+        args = json_copy(arguments, limit)
+        if not entry.input_validator.is_valid(args):
+            raise ValueError('Invalid arguments')
+        return args
 
     @staticmethod
     def _valid_result(r, entry):

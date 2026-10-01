@@ -1,0 +1,43 @@
+name: Core and PostgreSQL
+on:
+  push:
+    branches: [main, 'feature/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-ci-only
+          POSTGRES_DB: ecosystem_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      TEST_DATABASE_ADMIN_URL: postgresql://postgres:disposable-ci-only@localhost:5432/ecosystem_test
+      TEST_DATABASE_URL: postgresql://ecosystem_app:disposable-app-only@localhost:5432/ecosystem_test
+      TEST_DATABASE_DISPOSABLE: 'yes'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
+      - name: Create restricted test role
+        run: |
+          python - <<'PY'
+          import os, psycopg
+          with psycopg.connect(os.environ['TEST_DATABASE_ADMIN_URL']) as c:
+              c.execute("CREATE ROLE ecosystem_app LOGIN PASSWORD 'disposable-app-only' NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE")
+          PY
+      - run: python -m unittest discover -s tests -v

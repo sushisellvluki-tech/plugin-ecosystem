@@ -9,14 +9,14 @@ def bind(host, core, plugin, *, legacy_sse=False):
     if not any(e.plugin is plugin for e in core.registry._entries.values()):
         raise ValueError('Register the plugin first')
 
-    def catalog(context, style):
-        rows = core.catalog(context, style)
+    async def catalog(context, style):
+        rows = await core.catalog_async(context, style)
         names = {name for name, entry in core.registry._entries.items() if entry.domain == domain}
         return [r for r in rows if (r['function']['name'] if style == 'chat_completions' else r['name']) in names]
 
     async def functions(context):
         return {'contract_version': '0.1', 'domain': domain,
-                'responses': catalog(context, 'responses'), 'chat_completions': catalog(context, 'chat_completions')}
+                'responses': await catalog(context, 'responses'), 'chat_completions': await catalog(context, 'chat_completions')}
 
     async def invoke(body, context):
         if not isinstance(body, dict) or set(body) != {'name', 'arguments'}:
@@ -24,7 +24,7 @@ def bind(host, core, plugin, *, legacy_sse=False):
         return await core.dispatch(plugin, body['name'], body['arguments'], context)
 
     async def list_tools(context):
-        return catalog(context, 'mcp')
+        return await catalog(context, 'mcp')
 
     async def call_tool(name, arguments, context):
         result = await core.dispatch(plugin, name, arguments, context)
