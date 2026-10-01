@@ -1,0 +1,232 @@
+{
+  "status": "passed",
+  "synthetic_only": true,
+  "python": "3.12.14",
+  "logical_cpus": 4,
+  "levels": [
+    {
+      "concurrency": 1,
+      "peak_in_flight": 1,
+      "organizations": 4,
+      "unique_inputs": 32,
+      "input_text_utf8_bytes": 5188,
+      "operations": 252,
+      "wall_seconds": 15.636,
+      "operations_per_second": 16.12,
+      "latency_ms": {
+        "p50": 56.06,
+        "p95": 70.93,
+        "max": 138
+      },
+      "outcomes": {
+        "OK": 184,
+        "CONFLICT": 36,
+        "NOT_FOUND": 32
+      },
+      "database_counts": {
+        "batches": 64,
+        "source_versions": 32,
+        "runs": 8,
+        "publications": 4
+      },
+      "missing_outbox": 0,
+      "invariants": "passed",
+      "by_operation": {
+        "http:get_batch": {
+          "count": 32,
+          "p95_ms": 56.04
+        },
+        "http:import_batch": {
+          "count": 160,
+          "p95_ms": 65.11
+        },
+        "http:publish": {
+          "count": 12,
+          "p95_ms": 70.96
+        },
+        "http:review_run": {
+          "count": 8,
+          "p95_ms": 71.09
+        },
+        "http:submit_draft": {
+          "count": 8,
+          "p95_ms": 70.1
+        },
+        "mcp:get_batch": {
+          "count": 32,
+          "p95_ms": 100.11
+        }
+      }
+    },
+    {
+      "concurrency": 8,
+      "peak_in_flight": 8,
+      "organizations": 4,
+      "unique_inputs": 32,
+      "input_text_utf8_bytes": 5188,
+      "operations": 252,
+      "wall_seconds": 4.513,
+      "operations_per_second": 55.84,
+      "latency_ms": {
+        "p50": 101.74,
+        "p95": 272.22,
+        "max": 289.36
+      },
+      "outcomes": {
+        "OK": 184,
+        "CONFLICT": 36,
+        "NOT_FOUND": 32
+      },
+      "database_counts": {
+        "batches": 64,
+        "source_versions": 32,
+        "runs": 8,
+        "publications": 4
+      },
+      "missing_outbox": 0,
+      "invariants": "passed",
+      "by_operation": {
+        "http:get_batch": {
+          "count": 32,
+          "p95_ms": 109.24
+        },
+        "http:import_batch": {
+          "count": 160,
+          "p95_ms": 150.09
+        },
+        "http:publish": {
+          "count": 12,
+          "p95_ms": 145.53
+        },
+        "http:review_run": {
+          "count": 8,
+          "p95_ms": 171.27
+        },
+        "http:submit_draft": {
+          "count": 8,
+          "p95_ms": 196.62
+        },
+        "mcp:get_batch": {
+          "count": 32,
+          "p95_ms": 288.27
+        }
+      }
+    },
+    {
+      "concurrency": 32,
+      "peak_in_flight": 32,
+      "organizations": 4,
+      "unique_inputs": 32,
+      "input_text_utf8_bytes": 5188,
+      "operations": 252,
+      "wall_seconds": 4.322,
+      "operations_per_second": 58.31,
+      "latency_ms": {
+        "p50": 294.97,
+        "p95": 1063.12,
+        "max": 1105.66
+      },
+      "outcomes": {
+        "OK": 184,
+        "CONFLICT": 36,
+        "NOT_FOUND": 32
+      },
+      "database_counts": {
+        "batches": 64,
+        "source_versions": 32,
+        "runs": 8,
+        "publications": 4
+      },
+      "missing_outbox": 0,
+      "invariants": "passed",
+      "by_operation": {
+        "http:get_batch": {
+          "count": 32,
+          "p95_ms": 336.64
+        },
+        "http:import_batch": {
+          "count": 160,
+          "p95_ms": 681.88
+        },
+        "http:publish": {
+          "count": 12,
+          "p95_ms": 148.95
+        },
+        "http:review_run": {
+          "count": 8,
+          "p95_ms": 163.66
+        },
+        "http:submit_draft": {
+          "count": 8,
+          "p95_ms": 141.38
+        },
+        "mcp:get_batch": {
+          "count": 32,
+          "p95_ms": 1101.81
+        }
+      }
+    },
+    {
+      "concurrency": 64,
+      "peak_in_flight": 64,
+      "organizations": 4,
+      "unique_inputs": 32,
+      "input_text_utf8_bytes": 5188,
+      "operations": 252,
+      "wall_seconds": 4.424,
+      "operations_per_second": 56.96,
+      "latency_ms": {
+        "p50": 375.84,
+        "p95": 1108.08,
+        "max": 1160.13
+      },
+      "outcomes": {
+        "OK": 184,
+        "CONFLICT": 36,
+        "NOT_FOUND": 32
+      },
+      "database_counts": {
+        "batches": 64,
+        "source_versions": 32,
+        "runs": 8,
+        "publications": 4
+      },
+      "missing_outbox": 0,
+      "invariants": "passed",
+      "by_operation": {
+        "http:get_batch": {
+          "count": 32,
+          "p95_ms": 354.43
+        },
+        "http:import_batch": {
+          "count": 160,
+          "p95_ms": 1097.69
+        },
+        "http:publish": {
+          "count": 12,
+          "p95_ms": 151.77
+        },
+        "http:review_run": {
+          "count": 8,
+          "p95_ms": 180.1
+        },
+        "http:submit_draft": {
+          "count": 8,
+          "p95_ms": 142.87
+        },
+        "mcp:get_batch": {
+          "count": 32,
+          "p95_ms": 1126.49
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Loopback and disposable PostgreSQL; not a production SLA or capacity limit",
+    "No model calls, Plaud parser, WAN/TLS, proxy, soak test or process-kill fault injection",
+    "Latency excludes client semaphore wait; throughput includes protocol setup and validation"
+  ],
+  "ci_run_url": "https://github.com/sushisellvluki-tech/plugin-ecosystem/actions/runs/36922901178",
+  "code_commit": "cea04258fe6220a46f50a91367b41e10333fe186",
+  "report_local_date": "2026-10-02"
+}
