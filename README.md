@@ -2,6 +2,15 @@
 
 Plugin ecosystem core with reusable plugin architecture.
 
+## Construction product foundation
+
+Added an opt-in `workforce` plugin for read-only preview of normalized time rows:
+missing references, date/period conflicts, future actuals, duplicate rows and
+multi-site daily time checks. It uses the existing core and HTTP/MCP host.
+It does not yet import XLSX, persist personnel records or calculate payroll.
+[Behavior and tests](docs/workforce-preview.md) ·
+[Proposed product model and acceptance plan](docs/construction-product-foundation.md).
+
 ## Текущее состояние: Кабинет meetings — от текста до проверенной публикации
 
 Репозиторий содержит готовый навык проектирования экосистемы, контракт плагина,
