@@ -1,0 +1,18 @@
+{
+  "domain": "workforce",
+  "version": "0.1.0",
+  "contract_version": "0.1",
+  "status": "preview_only",
+  "business_ready": false,
+  "runtime_included": false,
+  "entrypoint": "plugins.workforce.plugin",
+  "adapters": {
+    "openai": "plugins.workforce.expose.openai:register",
+    "mcp": "plugins.workforce.expose.mcp:register"
+  },
+  "database": {
+    "planned_engine": "postgresql",
+    "planned_schema": "workforce",
+    "migrations_implemented": false
+  }
+}
