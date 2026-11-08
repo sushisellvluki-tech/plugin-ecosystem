@@ -135,6 +135,19 @@ class Meetings:
         entries = await self.rows('SELECT e.ordinal AS index,e.filename,e.format,e.raw_text AS text,e.external_id,e.status,e.reason,e.source_version_id::text,v.sha256 AS source_hash FROM meetings.batch_entries e LEFT JOIN meetings.source_versions v ON v.organization_id=e.organization_id AND v.id=e.source_version_id WHERE e.organization_id=%s AND e.batch_id=%s ORDER BY e.ordinal', (self.org,batch['id']))
         return {'batch_id': batch['id'], 'status': batch['status'], 'entries': entries}
 
+    async def propose_claims(self, batch_id, use_llm=True):
+        """Suggest claims only. Never writes runs, reviews or publications."""
+        if use_llm is None:
+            use_llm = True
+        if type(use_llm) is not bool:
+            raise ValueError('use_llm must be a boolean')
+        batch = await self.get_batch(batch_id)
+        if batch['status'] not in ('ingested', 'blocked_ingestion'):
+            # still allow reading blocked batches for inspection
+            pass
+        from .ai_propose import propose_claims as propose
+        return propose(batch['entries'], use_llm=use_llm)
+
     async def history_revision(self):
         row = await self.one('SELECT history_revision FROM meetings.tenant_state WHERE organization_id=%s', (self.org,))
         return row['history_revision'] if row else 0

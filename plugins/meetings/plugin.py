@@ -79,5 +79,10 @@ async def handle(name: str, arguments: dict, context: dict) -> dict:
         "ok": True,
         "data": {"domain": DOMAIN, "version": VERSION, "business_ready": False, "implementation": "manual_review"},
         "error": None,
-        "warnings": ["Text ingestion and independent manual review are supported. Automatic AI extraction and a native Plaud parser are not configured."],
+        "warnings": [
+            "Text ingestion and independent manual review are supported. "
+            "propose_claims can suggest quotes (LLM optional, heuristic fallback); "
+            "it never reviews or publishes. Native binary Plaud parser is not configured — "
+            "use sources.plaud.normalize_payload then import_batch."
+        ],
     }

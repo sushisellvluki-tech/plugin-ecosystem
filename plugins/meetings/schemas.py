@@ -25,12 +25,27 @@ RUN = obj(run_id=S, batch_id=S, status=S, artifact_hash=S, source_hash=S, rule_v
 HISTORY = obj(records=array(obj(run_id=S, artifact_hash=S, claims=array(CLAIM), stale=B)), truncated=B)
 PAGE = obj(records=array(obj(batch_id=S,created_at=S,source_account_id=S,ingestion_status=S,
                               run_id=N,run_status=N,stale=B,files=I)),next_cursor=N)
+PROPOSAL = obj(
+    claims=array(CLAIM),
+    model_version=N,
+    prompt_version=N,
+    extractor=S,
+    warnings=array(S),
+)
+
 SPECS = [
     ('list_batches', 'List this organization batches with stable cursor pagination; no raw transcripts in the projection.',
      obj(cursor=N,limit=I), PAGE, 'read', True),
     ('import_batch', 'Import a bounded batch of explicit text/plain transcripts; preserve rejected entries. No binary Plaud parser.',
      obj(source_account_id=S, sources=array(SOURCE)), BATCH, 'write', False),
     ('get_batch', 'Read original texts and per-entry ingestion outcomes in this organization.', obj(batch_id=S), BATCH, 'read', True),
+    ('propose_claims',
+     'Suggest draft claims from accepted batch texts (LLM if configured, else heuristic). '
+     'Does not store a run, review, or publish. Quotes are verified against source text. '
+     'Pass use_llm=false to force the heuristic.',
+     {'type': 'object', 'properties': {'batch_id': S, 'use_llm': B},
+      'required': ['batch_id'], 'additionalProperties': False},
+     PROPOSAL, 'read', True),
     ('submit_draft', 'Store immutable proposed claims with exact source offsets. Does not call an AI model or approve facts.',
      obj(batch_id=S, claims=array(CLAIM), model_version=N, prompt_version=N), RUN, 'write', False),
     ('get_run', 'Read checks and stale status for a specific draft version.', obj(run_id=S), RUN, 'read', True),
